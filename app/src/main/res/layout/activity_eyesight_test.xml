@@ -1,9 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
     tools:context=".EyesightTestActivity">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <ImageView
+            android:id="@+id/button2"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:tag="2"
+            android:src="@drawable/button_idle2"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp" />
+
+        <ImageView
+            android:id="@+id/button3"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:tag="3"
+            android:src="@drawable/button_idle3"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp" />
+
+        <ImageView
+            android:id="@+id/button5"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:tag="5"
+            android:src="@drawable/button_idle5"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp" />
+
+        <ImageView
+            android:id="@+id/button6"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:tag="6"
+            android:src="@drawable/button_idle6"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp" />
+
+        <ImageView
+            android:id="@+id/button9"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:tag="9"
+            android:src="@drawable/button_idle9"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp" />
+
+</LinearLayout>

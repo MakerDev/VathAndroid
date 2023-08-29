@@ -10,4 +10,19 @@
         android:layout_height="fill_parent"
         android:layout_gravity="top"/>
 
+    <TextView
+        android:id="@+id/depthTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="hello world" />
+
+    <View
+        android:id="@+id/rectView"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_centerInParent="true"
+        android:layout_margin="16dp"
+        android:background="@drawable/rect_border" />
+
 </RelativeLayout>

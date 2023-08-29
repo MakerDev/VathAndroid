@@ -1,0 +1,6 @@
+<!-- res/drawable/rect_border.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <stroke
+        android:width="3dp"
+        android:color="@android:color/holo_red_light"/>
+</shape>
