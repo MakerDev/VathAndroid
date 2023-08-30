@@ -17,7 +17,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun openEyesightTest(view: View) {
-        val intent = Intent(this, EyesightTestActivity::class.java)
+        val intent = Intent(this, FaceDetectionActivity::class.java)
         startActivity(intent)
     }
 }

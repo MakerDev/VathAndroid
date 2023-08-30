@@ -22,6 +22,7 @@ class EyesightTestActivity : AppCompatActivity() {
     private var clientSocket: Socket? = null
     private var reader: BufferedReader? = null
     private var writer: OutputStreamWriter? = null
+    private var isDetectingEye = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
