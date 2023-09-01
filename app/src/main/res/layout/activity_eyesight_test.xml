@@ -9,15 +9,18 @@
     tools:context=".EyesightTestActivity">
 
     <TextView
+        android:visibility="gone"
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="tetaest">
-
     </TextView>
+
     <FrameLayout
+        android:id="@+id/frameLayoutFinder"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="visible"
         app:layout_constraintBottom_toTopOf="@+id/btnSwitch"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

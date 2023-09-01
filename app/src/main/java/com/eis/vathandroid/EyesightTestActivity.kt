@@ -2,10 +2,14 @@ package com.eis.vathandroid
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
+import android.media.SoundPool
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
+import android.view.WindowManager
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
@@ -17,6 +21,10 @@ import com.eis.vathandroid.camerax.CameraManager
 import com.eis.vathandroid.databinding.ActivityEyesightTestBinding
 import com.eis.vathandroid.faceDetection.OnSuccessListener
 import com.google.mlkit.vision.face.Face
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
@@ -35,6 +43,11 @@ class EyesightTestActivity : AppCompatActivity() {
 
     private var textView: TextView? = null
     private lateinit var cameraManager: CameraManager
+    private val detectionResults = mutableListOf<Int>()
+    private var lastDetectionTimestamp = System.currentTimeMillis()
+    private lateinit var soundPool: SoundPool
+    private var soundIdMap = mutableMapOf<Int, Int>()
+    private var canClickButton = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +65,13 @@ class EyesightTestActivity : AppCompatActivity() {
         showIpAddressDialog()
         createCameraManager()
         checkForPermission()
+
+        //binding.frameLayoutFinder.visibility = ImageView.GONE
+
+        soundPool = SoundPool.Builder().build()
+        soundIdMap[R.raw.left_eye_voice] = soundPool.load(this, R.raw.left_eye_voice, 1)
+        soundIdMap[R.raw.right_eye_voice] = soundPool.load(this, R.raw.right_eye_voice, 1)
+        soundIdMap[R.raw.tada] = soundPool.load(this, R.raw.tada, 1)
     }
 
     private fun checkForPermission() {
@@ -70,7 +90,45 @@ class EyesightTestActivity : AppCompatActivity() {
         }
     }
 
+    private fun displayDialog(isSuccessDialog: Boolean) {
+        canClickButton = false
+        val dialog = Dialog(this)
+        if (isSuccessDialog) {
+            dialog.setContentView(R.layout.success_dialog)
+        } else {
+            dialog.setContentView(R.layout.fail_dialog)
+        }
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent) // Removes default dialog background
+
+        val layoutParams = WindowManager.LayoutParams()
+        layoutParams.copyFrom(dialog.window?.attributes)
+        val displayMetrics = resources.displayMetrics
+        val dialogWidth = displayMetrics.widthPixels
+        layoutParams.width = dialogWidth
+
+        dialog.show()
+        dialog.window?.attributes = layoutParams
+
+        val scope = CoroutineScope(Dispatchers.Main)
+        val delayMillis = 1000L // 1 second
+
+        scope.launch {
+            delay(delayMillis)
+            dialog.dismiss()
+            canClickButton = true
+        }
+    }
+
     private fun onDetectionSuccess(faces: List<Face>) {
+        if (!isDetectingEye) {
+            return
+        }
+        val timestamp = System.currentTimeMillis()
+
+        if (timestamp - lastDetectionTimestamp < EYE_DETECTION_INTERVAL_MS) {
+            return
+        }
+
         faces.forEach {
             var isRightEyeOpen = false
             var isLeftEyeOpen = false
@@ -82,6 +140,32 @@ class EyesightTestActivity : AppCompatActivity() {
                 isRightEyeOpen = it.leftEyeOpenProbability!! > EYE_DETECTION_THRESHOLD
             }
 
+            if (isTargetingLeftEye) {
+                detectionResults.add(if (isLeftEyeOpen) 1 else -1)
+            } else {
+                detectionResults.add(if (isRightEyeOpen) 1 else -1)
+            }
+
+            if (detectionResults.count() >= EYE_NOTIFICATION_INTERVAL_MS / EYE_DETECTION_INTERVAL_MS) {
+                val sum = detectionResults.sum()
+                if (sum > 0) {
+                    runOnUiThread {
+                        if (isTargetingLeftEye) {
+                            soundPool.play(soundIdMap[R.raw.left_eye_voice]!!, 1f, 1f, 1, 0, 1f)
+                        } else {
+                            soundPool.play(soundIdMap[R.raw.right_eye_voice]!!, 1f, 1f, 1, 0, 1f)
+                        }
+                    }
+                }
+                detectionResults.clear()
+                //Make sure that the next detection will be at least 2 seconds later
+                lastDetectionTimestamp = timestamp + 2000
+            } else {
+                lastDetectionTimestamp = timestamp
+            }
+
+
+            //TODO: Comment this when the system is ready
             runOnUiThread {
                 textView?.text = "Right Eye: ${isRightEyeOpen} Left Eye: ${isLeftEyeOpen}"
             }
@@ -129,9 +213,12 @@ class EyesightTestActivity : AppCompatActivity() {
                 Log.e("EyesightTestActivity", "Connected to server")
                 reader = BufferedReader(InputStreamReader(clientSocket?.getInputStream()))
                 writer = OutputStreamWriter(clientSocket?.getOutputStream())
-
+                canClickButton = true
                 listenForData()
             } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(this, "Failed to connect to server", Toast.LENGTH_SHORT).show()
+                }
                 Log.e("EyesightTestActivity", "Failed to connect to server")
                 e.printStackTrace()
             }
@@ -154,26 +241,36 @@ class EyesightTestActivity : AppCompatActivity() {
     }
 
     private fun onDataReceived(data: String?) {
-        // Handle received data
-        Log.e("EyesightTestActivity", "Received data: $data")
+        //TODO: Handle server response
+        if (data.isNullOrEmpty() || data.contains("from")) {
+            return
+        }
+
+        if (data.lowercase().startsWith("end")) {
+            val testResult = data.split(" ")[1]
+            //TODO: End test to display the result
+            return
+        }
+        Log.d("EyesightTestActivity", "Received data: $data")
+        val isCorrect = data.lowercase().toBoolean()
+        if (isCorrect) {
+            displayDialog(true)
+            soundPool.play(soundIdMap[R.raw.tada]!!, 1f, 1f, 1, 0, 1f)
+        } else {
+            displayDialog(false)
+        }
     }
 
     private fun sendData(data: String) {
         thread {
             try {
+                canClickButton = false
                 writer?.write(data, 0, data.length)
                 writer?.flush()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        clientSocket?.close()
-        reader?.close()
-        writer?.close()
     }
 
     private fun showIpAddressDialog() {
@@ -201,18 +298,19 @@ class EyesightTestActivity : AppCompatActivity() {
     private fun showEyeSelectionDialog() {
         val dialog = AlertDialog.Builder(this)
             .setTitle("어느 쪽 눈을 검사하시나요?")
-            .setPositiveButton("왼눈") { _, _ ->
+            .setPositiveButton("오른눈") { _, _ ->
                 // Handle left eye selection
-                this.isTargetingLeftEye = true
-                isDetectingEye = true
-            }
-            .setNegativeButton("오른눈") { _, _ ->
-                // Handle right eye selection
                 this.isTargetingLeftEye = false
                 isDetectingEye = true
+                binding.frameLayoutFinder.visibility = ImageView.GONE
+            }
+            .setNegativeButton("왼눈") { _, _ ->
+                // Handle right eye selection
+                this.isTargetingLeftEye = true
+                isDetectingEye = true
+                binding.frameLayoutFinder.visibility = ImageView.GONE
             }
             .create()
-
 
         dialog.show()
     }
@@ -224,21 +322,23 @@ class EyesightTestActivity : AppCompatActivity() {
         button.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    // User presses the button, change the image to the pressed state
                     button.setImageResource(pressedImage)
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    // User releases the button, change the image back to the idle state
                     button.setImageResource(idleImage)
                 }
             }
 
-            // Return false to ensure the event continues to propagate, allowing clicks to work
             return@setOnTouchListener false
         }
 
         button.setOnClickListener {
+            if (!canClickButton) {
+                return@setOnClickListener
+            }
+
+            canClickButton = false
             val buttonView = it as ImageView
             val buttonNumber = buttonView.tag
             Log.e("EyesightTestActivity", "Button $buttonNumber pressed")
@@ -246,8 +346,17 @@ class EyesightTestActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        clientSocket?.close()
+        reader?.close()
+        writer?.close()
+        soundPool.release()
+    }
 
     companion object {
+        private const val EYE_DETECTION_INTERVAL_MS = 100
+        private const val EYE_NOTIFICATION_INTERVAL_MS = 2000
         private const val REQUEST_CODE_PERMISSIONS = 10
         private const val EYE_DETECTION_THRESHOLD = 0.96
         private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA)

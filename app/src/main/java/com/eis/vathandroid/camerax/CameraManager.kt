@@ -84,6 +84,7 @@ class CameraManager(
                 preview,
                 imageAnalyzer
             )
+
             preview?.setSurfaceProvider(
                 finderView.surfaceProvider
             )
