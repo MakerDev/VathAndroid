@@ -3,7 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature android:name="android.hardware.camera.any" />
+
     <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-feature
         android:name="android.hardware.camera.ar"
         android:required="true" />
@@ -25,8 +27,11 @@
         android:theme="@style/Theme.AppCompat"
         tools:targetApi="31">
         <activity
+            android:name=".ResultActivity"
+            android:exported="false" />
+        <activity
             android:name=".FaceDetectionActivity"
-            android:exported="false"/>
+            android:exported="false" />
         <activity
             android:name=".EyesightTestActivity"
             android:exported="false" />

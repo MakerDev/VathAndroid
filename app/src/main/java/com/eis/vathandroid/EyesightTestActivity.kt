@@ -3,6 +3,7 @@ package com.eis.vathandroid
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Dialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.SoundPool
@@ -47,7 +48,7 @@ class EyesightTestActivity : AppCompatActivity() {
     private var lastDetectionTimestamp = System.currentTimeMillis()
     private lateinit var soundPool: SoundPool
     private var soundIdMap = mutableMapOf<Int, Int>()
-    private var canClickButton = false
+    private var canClickButton = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -214,10 +215,13 @@ class EyesightTestActivity : AppCompatActivity() {
                 reader = BufferedReader(InputStreamReader(clientSocket?.getInputStream()))
                 writer = OutputStreamWriter(clientSocket?.getOutputStream())
                 canClickButton = true
+                runOnUiThread {
+                    Toast.makeText(this, "성공적으로 연결되었습니다.", Toast.LENGTH_SHORT).show()
+                }
                 listenForData()
             } catch (e: Exception) {
                 runOnUiThread {
-                    Toast.makeText(this, "Failed to connect to server", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "연결에 실패했습니다. 두 기기가 같은 네트워크에 연결되었는지 확인하세요", Toast.LENGTH_SHORT).show()
                 }
                 Log.e("EyesightTestActivity", "Failed to connect to server")
                 e.printStackTrace()
@@ -249,6 +253,9 @@ class EyesightTestActivity : AppCompatActivity() {
         if (data.lowercase().startsWith("end")) {
             val testResult = data.split(" ")[1]
             //TODO: End test to display the result
+            val intent = Intent(this, ResultActivity::class.java)
+            intent.putExtra("result", testResult)
+            startActivity(intent)
             return
         }
         Log.d("EyesightTestActivity", "Received data: $data")
