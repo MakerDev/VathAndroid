@@ -1,60 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
     tools:context=".EyesightTestActivity">
 
-        <ImageView
-            android:id="@+id/button2"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:tag="2"
-            android:src="@drawable/button_idle2"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp" />
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="tetaest">
 
-        <ImageView
-            android:id="@+id/button3"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:tag="3"
-            android:src="@drawable/button_idle3"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp" />
+    </TextView>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toTopOf="@+id/btnSwitch"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
-            android:id="@+id/button5"
+        <androidx.camera.view.PreviewView
+            android:id="@+id/previewViewFinder"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:tag="5"
-            android:src="@drawable/button_idle5"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp" />
+            android:layout_height="match_parent"
+            app:scaleType="fillCenter" />
 
-        <ImageView
-            android:id="@+id/button6"
+        <com.eis.vathandroid.camerax.GraphicOverlay
+            android:id="@+id/graphicOverlayFinder"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:tag="6"
-            android:src="@drawable/button_idle6"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp" />
+            android:layout_height="match_parent" />
+    </FrameLayout>
+    <ImageView
+        android:id="@+id/button2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:layout_weight="1"
+        android:src="@drawable/button_idle2"
+        android:tag="2" />
 
-        <ImageView
-            android:id="@+id/button9"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:tag="9"
-            android:src="@drawable/button_idle9"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp" />
+    <ImageView
+        android:id="@+id/button3"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:layout_weight="1"
+        android:src="@drawable/button_idle3"
+        android:tag="3" />
+
+    <ImageView
+        android:id="@+id/button5"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:layout_weight="1"
+        android:src="@drawable/button_idle5"
+        android:tag="5" />
+
+    <ImageView
+        android:id="@+id/button6"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:layout_weight="1"
+        android:src="@drawable/button_idle6"
+        android:tag="6" />
+
+    <ImageView
+        android:id="@+id/button9"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:layout_weight="1"
+        android:src="@drawable/button_idle9"
+        android:tag="9" />
 
 </LinearLayout>

@@ -30,11 +30,12 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 class FaceDetectionActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
-    private var mRgba: Mat? = null
-    private var mGray: Mat? = null
-    private var mOpenCvCameraView: CameraBridgeViewBase? = null
+    private var rgbaFrame: Mat? = null
+    private var grayFrame: Mat? = null
+    private var openCVCameraView: CameraBridgeViewBase? = null
     private var cascadeClassifier: CascadeClassifier? = null
-    private var cascadeClassifier_eye: CascadeClassifier? = null
+    private var cascadeClassifierEye: CascadeClassifier? = null
+    private var isTargetingLeftEye: Boolean = false
 
     private val mLoaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -42,7 +43,7 @@ class FaceDetectionActivity : AppCompatActivity(), CameraBridgeViewBase.CvCamera
                 SUCCESS -> {
                     run {
                         Log.i(TAG, "OpenCv Is loaded")
-                        mOpenCvCameraView!!.enableView()
+                        openCVCameraView!!.enableView()
                     }
                     run { super.onManagerConnected(status) }
                 }
@@ -75,12 +76,12 @@ class FaceDetectionActivity : AppCompatActivity(), CameraBridgeViewBase.CvCamera
             )
         }
         setContentView(R.layout.activity_face_detection)
-        mOpenCvCameraView = findViewById<View>(R.id.frame_Surface) as CameraBridgeViewBase
-        mOpenCvCameraView!!.setCameraPermissionGranted()
-        mOpenCvCameraView!!.visibility = SurfaceView.VISIBLE
-        mOpenCvCameraView!!.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT)
-        mOpenCvCameraView!!.setCvCameraViewListener(this)
-        mOpenCvCameraView!!.enableView()
+        openCVCameraView = findViewById<View>(R.id.frame_Surface) as CameraBridgeViewBase
+        openCVCameraView!!.setCameraPermissionGranted()
+        openCVCameraView!!.visibility = SurfaceView.VISIBLE
+        openCVCameraView!!.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT)
+        openCVCameraView!!.setCvCameraViewListener(this)
+        openCVCameraView!!.enableView()
 
         // load the model
         try {
@@ -118,7 +119,7 @@ class FaceDetectionActivity : AppCompatActivity(), CameraBridgeViewBase.CvCamera
             os2.close()
 
             // loading file from  cascade folder created above
-            cascadeClassifier_eye = CascadeClassifier(mCascadeFile_eye.absolutePath)
+            cascadeClassifierEye = CascadeClassifier(mCascadeFile_eye.absolutePath)
         } catch (e: IOException) {
             Log.i(TAG, "Cascade file not found")
         }
@@ -139,36 +140,37 @@ class FaceDetectionActivity : AppCompatActivity(), CameraBridgeViewBase.CvCamera
 
     override fun onPause() {
         super.onPause()
-        if (mOpenCvCameraView != null) {
-            mOpenCvCameraView!!.disableView()
+        if (openCVCameraView != null) {
+            openCVCameraView!!.disableView()
         }
     }
 
     public override fun onDestroy() {
         super.onDestroy()
-        if (mOpenCvCameraView != null) {
-            mOpenCvCameraView!!.disableView()
+        if (openCVCameraView != null) {
+            openCVCameraView!!.disableView()
         }
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
-        mRgba = Mat(height, width, CvType.CV_8UC4)
-        mGray = Mat(height, width, CvType.CV_8UC1)
+        rgbaFrame = Mat(height, width, CvType.CV_8UC4)
+        grayFrame = Mat(height, width, CvType.CV_8UC1)
     }
 
     override fun onCameraViewStopped() {
-        mRgba!!.release()
+        rgbaFrame!!.release()
     }
 
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
-        mRgba = inputFrame.rgba()
-        mGray = inputFrame.gray()
+        rgbaFrame = inputFrame.rgba()
+        grayFrame = inputFrame.gray()
         // in processing pass mRgba to cascaderec class
-        mRgba = CascadeRec(mRgba)
-        return mRgba!!
+        rgbaFrame = cascadeRec(rgbaFrame)
+
+        return rgbaFrame!!
     }
 
-    private fun CascadeRec(mRgba: Mat?): Mat? {
+    private fun cascadeRec(mRgba: Mat?): Mat {
         // original frame is -90 degree so we have to rotate is to 90 to get proper face for detection
         Core.flip(mRgba!!.t(), mRgba, -1)
         // convert it into RGB
@@ -201,28 +203,22 @@ class FaceDetectionActivity : AppCompatActivity(), CameraBridgeViewBase.CvCamera
                 Scalar(0.0, 255.0, 0.0, 255.0),
                 2
             )
+
             // crop face image and then pass it through eye classifier
-            // starting point
-            val roi = Rect(
-                facesArray[i].tl().x.toInt(),
-                facesArray[i].tl().y.toInt(),
-                facesArray[i].br().x.toInt() - facesArray[i].tl().x.toInt(),
-                facesArray[i].br().y.toInt() - facesArray[i].tl().y.toInt()
-            )
+            val roi = getRoi(facesArray[i], isTargetingLeftEye)
 
             // cropped mat image
             val cropped = Mat(mRgba, roi)
             // create a array to store eyes coordinate but we have to pass MatOfRect to classifier
             val eyes = MatOfRect()
-            if (cascadeClassifier_eye != null) {                                                      // find biggest size object
-                cascadeClassifier_eye!!.detectMultiScale(
+            if (cascadeClassifierEye != null) {
+                cascadeClassifierEye!!.detectMultiScale(
                     cropped,
                     eyes,
-                    1.15,
-                    2,
-                    2,
-                    Size(35.0, 35.0),
-                    Size()
+                    1.1,
+                    5,
+                    0,
+                    Size(30.0, 30.0)
                 )
 
                 // now create an array
@@ -250,6 +246,27 @@ class FaceDetectionActivity : AppCompatActivity(), CameraBridgeViewBase.CvCamera
         // rotate back original frame to -90 degree
         Core.flip(mRgba.t(), mRgba, 1)
         return mRgba
+    }
+
+    private fun getRoi(faceRect: Rect, isLeftEye: Boolean): Rect {
+        val width = (faceRect.br().x.toInt() - faceRect.tl().x.toInt()) / 2
+        val height = (faceRect.br().y.toInt() - faceRect.tl().y.toInt()) / 2
+
+        if (isLeftEye) {
+            return Rect(
+                faceRect.tl().x.toInt(),
+                faceRect.tl().y.toInt(),
+                width,
+                height
+            )
+        }
+
+        return Rect(
+            faceRect.tl().x.toInt() + width,
+            faceRect.tl().y.toInt(),
+            width,
+            height
+        )
     }
 
     companion object {

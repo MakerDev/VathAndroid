@@ -2,18 +2,27 @@ package com.eis.vathandroid
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.eis.vathandroid.camerax.CameraManager
+import com.eis.vathandroid.databinding.ActivityEyesightTestBinding
+import com.eis.vathandroid.faceDetection.OnSuccessListener
+import com.google.mlkit.vision.face.Face
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.Socket
 import kotlin.concurrent.thread
-import com.eis.vathandroid.databinding.ActivityEyesightTestBinding
+
 
 class EyesightTestActivity : AppCompatActivity() {
     private var ipAddress: String? = null
@@ -24,10 +33,15 @@ class EyesightTestActivity : AppCompatActivity() {
     private var writer: OutputStreamWriter? = null
     private var isDetectingEye = false
 
+    private var textView: TextView? = null
+    private lateinit var cameraManager: CameraManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityEyesightTestBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        textView = binding.textView
 
         setupCustomButton(binding.button2, R.drawable.button_idle2, R.drawable.button_pressed2)
         setupCustomButton(binding.button3, R.drawable.button_idle3, R.drawable.button_pressed3)
@@ -36,6 +50,76 @@ class EyesightTestActivity : AppCompatActivity() {
         setupCustomButton(binding.button9, R.drawable.button_idle9, R.drawable.button_pressed9)
 
         showIpAddressDialog()
+        createCameraManager()
+        checkForPermission()
+    }
+
+    private fun checkForPermission() {
+        if (allPermissionsGranted()) {
+            cameraManager.startCamera(object : OnSuccessListener {
+                override fun onSuccess(faces: List<Face>) {
+                    onDetectionSuccess(faces)
+                }
+            })
+        } else {
+            ActivityCompat.requestPermissions(
+                this,
+                REQUIRED_PERMISSIONS,
+                REQUEST_CODE_PERMISSIONS
+            )
+        }
+    }
+
+    private fun onDetectionSuccess(faces: List<Face>) {
+        faces.forEach {
+            var isRightEyeOpen = false
+            var isLeftEyeOpen = false
+            if (it.rightEyeOpenProbability != null) {
+                isLeftEyeOpen = it.rightEyeOpenProbability!! > EYE_DETECTION_THRESHOLD
+            }
+
+            if (it.leftEyeOpenProbability != null) {
+                isRightEyeOpen = it.leftEyeOpenProbability!! > EYE_DETECTION_THRESHOLD
+            }
+
+            runOnUiThread {
+                textView?.text = "Right Eye: ${isRightEyeOpen} Left Eye: ${isLeftEyeOpen}"
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<String>, grantResults:
+        IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (allPermissionsGranted()) {
+                cameraManager.startCamera(object : OnSuccessListener {
+                    override fun onSuccess(faces: List<Face>) {
+                        onDetectionSuccess(faces)
+                    }
+                })
+            } else {
+                Toast.makeText(this, "Permissions not granted by the user.", Toast.LENGTH_SHORT)
+                    .show()
+                finish()
+            }
+        }
+    }
+
+    private fun createCameraManager() {
+        cameraManager = CameraManager(
+            this,
+            binding.previewViewFinder,
+            this,
+            binding.graphicOverlayFinder
+        )
+    }
+
+    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun connectToServer(ipAddress: String) {
@@ -120,12 +204,15 @@ class EyesightTestActivity : AppCompatActivity() {
             .setPositiveButton("왼눈") { _, _ ->
                 // Handle left eye selection
                 this.isTargetingLeftEye = true
+                isDetectingEye = true
             }
             .setNegativeButton("오른눈") { _, _ ->
                 // Handle right eye selection
                 this.isTargetingLeftEye = false
+                isDetectingEye = true
             }
             .create()
+
 
         dialog.show()
     }
@@ -157,5 +244,12 @@ class EyesightTestActivity : AppCompatActivity() {
             Log.e("EyesightTestActivity", "Button $buttonNumber pressed")
             sendData("Answer $buttonNumber\n")
         }
+    }
+
+
+    companion object {
+        private const val REQUEST_CODE_PERMISSIONS = 10
+        private const val EYE_DETECTION_THRESHOLD = 0.96
+        private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA)
     }
 }
