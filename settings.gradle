@@ -12,6 +12,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "VathAndroid"
 include ':app'
-include ':opencv'
+rootProject.name = "VathAndroid"
+project(':app').projectDir = new File(rootDir, 'app/')

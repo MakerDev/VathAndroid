@@ -166,10 +166,9 @@ class EyesightTestActivity : AppCompatActivity() {
             }
 
 
-            //TODO: Comment this when the system is ready
-            runOnUiThread {
-                textView?.text = "Right Eye: ${isRightEyeOpen} Left Eye: ${isLeftEyeOpen}"
-            }
+//            runOnUiThread {
+//                textView?.text = "Right Eye: ${isRightEyeOpen} Left Eye: ${isLeftEyeOpen}"
+//            }
         }
     }
 
@@ -210,7 +209,7 @@ class EyesightTestActivity : AppCompatActivity() {
     private fun connectToServer(ipAddress: String) {
         thread {
             try {
-                clientSocket = Socket(ipAddress, 9099)
+                clientSocket = Socket(ipAddress, 9699)
                 Log.e("EyesightTestActivity", "Connected to server")
                 reader = BufferedReader(InputStreamReader(clientSocket?.getInputStream()))
                 writer = OutputStreamWriter(clientSocket?.getOutputStream())
@@ -245,16 +244,17 @@ class EyesightTestActivity : AppCompatActivity() {
     }
 
     private fun onDataReceived(data: String?) {
-        //TODO: Handle server response
         if (data.isNullOrEmpty() || data.contains("from")) {
             return
         }
 
         if (data.lowercase().startsWith("end")) {
             val testResult = data.split(" ")[1]
-            //TODO: End test to display the result
             val intent = Intent(this, ResultActivity::class.java)
             intent.putExtra("result", testResult)
+
+            isDetectingEye = false
+
             startActivity(intent)
             return
         }
@@ -326,7 +326,7 @@ class EyesightTestActivity : AppCompatActivity() {
     private fun setupCustomButton(button: ImageView, idleImage: Int, pressedImage: Int) {
         button.setImageResource(idleImage)
 
-        button.setOnTouchListener { v, event ->
+        button.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     button.setImageResource(pressedImage)

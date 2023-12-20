@@ -10,7 +10,7 @@
         android:id="@+id/buttonDepthTest"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Depth Test"
+        android:text="거리재기"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:onClick="openDepthTest" />
@@ -19,7 +19,7 @@
         android:id="@+id/buttonEyesightTest"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Eyesight Test"
+        android:text="시력검사"
         android:layout_below="@id/buttonDepthTest"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"
